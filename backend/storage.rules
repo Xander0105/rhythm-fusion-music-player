@@ -1,0 +1,28 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // User uploads
+    match /tracks/{userId}/{allPaths=**} {
+      allow read: if true;  // Public access to tracks
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Album artwork
+    match /album_art/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.token.admin == true;
+    }
+    
+    // Playlist covers
+    match /playlist-covers/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // User profile images
+    match /profile-images/{userId}/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

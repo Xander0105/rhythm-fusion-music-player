@@ -1,0 +1,24 @@
+{
+  "name": "rhythm-fusion-backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "firebase deploy",
+    "deploy:functions": "firebase deploy --only functions",
+    "deploy:firestore": "firebase deploy --only firestore",
+    "deploy:storage": "firebase deploy --only storage",
+    "deploy:hosting": "firebase deploy --only hosting",
+    "emulators": "firebase emulators:start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "description": "Backend for Rhythm Fusion music player application",
+  "dependencies": {
+    "firebase-tools": "^14.11.1"
+  },
+  "devDependencies": {},
+  "private": true
+}
