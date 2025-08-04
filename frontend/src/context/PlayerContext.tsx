@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 
 interface Track {
   id: string;
@@ -6,7 +6,7 @@ interface Track {
   artist: string;
   album: string;
   duration: number;
-  coverUrl: string;
+  coverUrl?: string;
   audioUrl: string;
 }
 
@@ -33,36 +33,38 @@ export const usePlayer = () => useContext(PlayerContext);
 export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentTrack, setCurrentTrack] = useState<Track | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [volume, setVolume] = useState(70);
+  const [volumeState, setVolumeState] = useState(70);
   const [progress, setProgress] = useState(0);
   const [queue, setQueue] = useState<Track[]>([]);
-  const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
+  const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize audio element
   useEffect(() => {
-    const audio = new Audio();
-    audio.volume = volume / 100;
+    const audioElement = new Audio();
+    audioElement.volume = volumeState / 100;
     
-    audio.addEventListener('timeupdate', () => {
-      if (audio.duration) {
-        setProgress((audio.currentTime / audio.duration) * 100);
+    audioElement.addEventListener('timeupdate', () => {
+      if (audioElement.duration) {
+        setProgress((audioElement.currentTime / audioElement.duration) * 100);
       }
     });
     
-    audio.addEventListener('ended', () => {
+    audioElement.addEventListener('ended', () => {
       nextTrack();
     });
     
-    setAudioElement(audio);
+    audioElementRef.current = audioElement;
     
     return () => {
-      audio.pause();
-      audio.src = '';
+      audioElement.pause();
+      audioElement.src = '';
+      audioElementRef.current = null;
     };
   }, []);
 
   // Update audio source when track changes
   useEffect(() => {
+    const audioElement = audioElementRef.current;
     if (audioElement && currentTrack) {
       audioElement.src = currentTrack.audioUrl;
       
@@ -72,14 +74,17 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         });
       }
     }
-  }, [currentTrack, audioElement]);
+  }, [currentTrack]);
 
   // Update volume when changed
   useEffect(() => {
+    const audioElement = audioElementRef.current;
     if (audioElement) {
-      audioElement.volume = volume / 100;
+      audioElement.volume = volumeState / 100;
+      console.log(`Current volume state: ${volumeState}%`);
+      console.log(`Actual audio element volume: ${audioElement.volume * 100}%`);
     }
-  }, [volume, audioElement]);
+  }, [volumeState]);
 
   const playTrack = (track: Track) => {
     setCurrentTrack(track);
@@ -87,6 +92,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const pauseTrack = () => {
+    const audioElement = audioElementRef.current;
     if (audioElement) {
       audioElement.pause();
       setIsPlaying(false);
@@ -94,6 +100,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const resumeTrack = () => {
+    const audioElement = audioElementRef.current;
     if (audioElement) {
       audioElement.play().catch(error => {
         console.error('Error resuming audio:', error);
@@ -114,13 +121,30 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const prevTrack = () => {
-    // Implementation would depend on your history tracking
-    // This is a simplified version
+    const audioElement = audioElementRef.current;
+    // If more than 3 seconds have passed, restart the current track
     if (audioElement && audioElement.currentTime > 3) {
       audioElement.currentTime = 0;
     } else {
       // Would need track history to implement properly
       console.log('Go to previous track');
+    }
+  };
+
+  const setVolume = (newVolume: number) => {
+    // Make sure newVolume is between 0 and 100
+    const clampedVolume = Math.max(0, Math.min(100, newVolume));
+    
+    // Update state
+    setVolumeState(clampedVolume);
+    
+    // Apply to audio element - convert percentage to decimal (0-1)
+    const audioElement = audioElementRef.current;
+    if (audioElement) {
+      audioElement.volume = clampedVolume / 100;
+      
+      // Log to verify it's working
+      console.log(`Setting volume to ${clampedVolume}% (${audioElement.volume})`);
     }
   };
 
@@ -135,7 +159,7 @@ export const PlayerProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const value = {
     currentTrack,
     isPlaying,
-    volume,
+    volume: volumeState,
     progress,
     queue,
     playTrack,

@@ -1,4 +1,6 @@
-import React from 'react';
+// frontend/src/components/TrackList.tsx
+
+import React, { useState, useEffect } from 'react';
 import { ClockIcon, HeartIcon } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { usePlayer } from '../context/PlayerContext';
@@ -24,7 +26,7 @@ interface TrackListProps {
 const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
   const { playTrack, currentTrack } = usePlayer();
   const { user } = useAuth();
-  const [likedTracks, setLikedTracks] = React.useState<Record<string, boolean>>({});
+  const [likedTracks, setLikedTracks] = useState<Record<string, boolean>>({});
   
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
@@ -34,11 +36,22 @@ const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
   };
 
   // Load liked tracks on component mount
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchLikedTracks = async () => {
       if (!user) return;
       
       try {
+        // For development mode
+        if (process.env.NODE_ENV === 'development') {
+          // Check localStorage for liked tracks
+          const savedLikes = localStorage.getItem(`liked-tracks-${user.uid}`);
+          if (savedLikes) {
+            setLikedTracks(JSON.parse(savedLikes));
+          }
+          return;
+        }
+        
+        // For production
         const userLikesRef = doc(db, 'users', user.uid, 'likes', 'tracks');
         const userLikesDoc = await getDoc(userLikesRef);
         
@@ -67,8 +80,26 @@ const TrackList: React.FC<TrackListProps> = ({ tracks }) => {
     if (!user) return;
     
     try {
-      const userLikesRef = doc(db, 'users', user.uid, 'likes', 'tracks');
       const isLiked = likedTracks[trackId];
+      
+      // For development mode
+      if (process.env.NODE_ENV === 'development') {
+        const updatedLikes = { ...likedTracks };
+        
+        if (isLiked) {
+          delete updatedLikes[trackId];
+        } else {
+          updatedLikes[trackId] = true;
+        }
+        
+        // Save to localStorage
+        localStorage.setItem(`liked-tracks-${user.uid}`, JSON.stringify(updatedLikes));
+        setLikedTracks(updatedLikes);
+        return;
+      }
+      
+      // For production
+      const userLikesRef = doc(db, 'users', user.uid, 'likes', 'tracks');
       
       if (isLiked) {
         // Unlike track

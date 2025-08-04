@@ -52,10 +52,41 @@ export default function Profile() {
     setSuccess('');
     
     try {
-      // Upload profile image if provided
+      // Handle development mode differently
+      if (process.env.NODE_ENV === 'development') {
+        // For development, just store the image preview in localStorage
+        let photoURL = user.photoURL || '';
+        
+        if (imagePreview && imagePreview !== user.photoURL) {
+          photoURL = imagePreview;
+          
+          // Update dev user in localStorage
+          const savedUser = localStorage.getItem('dev-user');
+          if (savedUser) {
+            const devUser = JSON.parse(savedUser);
+            devUser.displayName = displayName;
+            devUser.photoURL = photoURL;
+            localStorage.setItem('dev-user', JSON.stringify(devUser));
+            
+            // Update the user in AuthContext
+            if (user) {
+              // This is a hack for development mode
+              (user as any).displayName = displayName;
+              (user as any).photoURL = photoURL;
+            }
+          }
+        }
+        
+        setSuccess('Profile updated successfully (Development Mode)');
+        setLoading(false);
+        return;
+      }
+      
+      // Production mode - use Firebase
       let photoURL = user.photoURL || '';
+      
       if (profileImage) {
-        const imageRef = ref(storage, `profile-images/${user.uid}/${Date.now()}-${profileImage.name}`);
+        const imageRef = ref(storage, `profile-images/${user.uid}/profile-pic-${Date.now()}.jpg`);
         await uploadBytes(imageRef, profileImage);
         photoURL = await getDownloadURL(imageRef);
       }
@@ -187,6 +218,14 @@ export default function Profile() {
             </button>
           </div>
         </form>
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-3 bg-primary rounded border border-neutral-dark">
+            <p className="text-neutral text-sm">
+              <strong>Development Mode:</strong> Profile updates are stored locally and will not persist after page refresh.
+            </p>
+          </div>
+        )}
       </div>
     </Layout>
   );

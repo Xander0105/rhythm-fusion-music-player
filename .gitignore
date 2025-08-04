@@ -44,3 +44,7 @@ ui-debug.log
 # IDE
 .idea
 .vscode
+
+# Firebase Functions
+backend/functions/node_modules
+backend/functions/lib

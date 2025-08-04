@@ -27,11 +27,12 @@ const functions = getFunctions(app);
 
 // Add after your Firebase initialization code
 if (process.env.NODE_ENV === 'development') {
-  // Connect to local emulators
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  connectStorageEmulator(storage, '127.0.0.1', 9199);
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+  connectAuthEmulator(auth, 'http://localhost:9099');
+  connectFirestoreEmulator(db, 'localhost', 8080);
+  connectStorageEmulator(storage, 'localhost', 9199);
+  connectFunctionsEmulator(functions, 'localhost', 5001);
+  
+  console.log('Connected to Firebase emulators');
 }
 
 

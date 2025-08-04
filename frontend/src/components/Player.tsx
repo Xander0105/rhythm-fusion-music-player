@@ -1,4 +1,3 @@
-// frontend/src/components/Player.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   PlayIcon, 
@@ -30,6 +29,7 @@ const Player: React.FC = () => {
   const [liked, setLiked] = useState(false);
   const [showVolumeControl, setShowVolumeControl] = useState(false);
   const progressBarRef = useRef<HTMLDivElement>(null);
+  const volumeSliderRef = useRef<HTMLDivElement>(null);
   
   // Format time in MM:SS
   const formatTime = (seconds: number) => {
@@ -57,8 +57,23 @@ const Player: React.FC = () => {
   };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVolume = parseInt(e.target.value);
+    const newVolume = parseInt(e.target.value, 10);
     setVolume(newVolume);
+    console.log(`Volume changed to: ${newVolume}`);
+  };
+
+  const handleVolumeBarClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!volumeSliderRef.current) return;
+    
+    const rect = volumeSliderRef.current.getBoundingClientRect();
+    const clickPosition = e.clientX - rect.left;
+    const sliderWidth = rect.width;
+    
+    // Calculate new volume as a percentage
+    const newVolume = Math.max(0, Math.min(100, (clickPosition / sliderWidth) * 100));
+    
+    // Update volume
+    setVolume(Math.round(newVolume));
   };
   
   if (!currentTrack) {
@@ -161,16 +176,16 @@ const Player: React.FC = () => {
           </button>
           
           {showVolumeControl && (
-            <div className="absolute bottom-full right-0 mb-2 p-2 bg-primary-light rounded shadow-lg">
+            <div className="absolute bottom-full right-0 mb-2 p-2 bg-primary-light rounded shadow-lg z-10">
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={volume}
                 onChange={handleVolumeChange}
-                className="w-24 h-1 appearance-none bg-neutral-dark rounded-full"
+                className="w-24 h-1 appearance-none bg-neutral-dark rounded-full cursor-pointer"
                 style={{
-                  background: `linear-gradient(to right, #B3B3B3 0%, #B3B3B3 ${volume}%, #727272 ${volume}%, #727272 100%)`,
+                  background: `linear-gradient(to right, #FFD700 0%, #FFD700 ${volume}%, #727272 ${volume}%, #727272 100%)`,
                 }}
               />
             </div>
@@ -178,12 +193,18 @@ const Player: React.FC = () => {
         </div>
         
         <div className="ml-4 w-24 hidden md:block">
-          <div className="h-1 bg-neutral-dark rounded-full">
+          <div 
+            className="h-1 bg-neutral-dark rounded-full cursor-pointer"
+            ref={volumeSliderRef}
+            onClick={handleVolumeBarClick}
+          >
             <div 
-              className="h-full bg-neutral rounded-full relative"
+              className="h-full bg-secondary rounded-full relative"
               style={{ width: `${volume}%` }}
             >
-              <div className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-neutral-light rounded-full shadow-md"></div>
+              <div 
+                className="absolute right-0 top-1/2 transform -translate-y-1/2 translate-x-1/2 w-3 h-3 bg-neutral-light rounded-full shadow-md cursor-grab"
+              />
             </div>
           </div>
         </div>

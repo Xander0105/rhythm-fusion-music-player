@@ -1,28 +1,61 @@
 rules_version = '2';
-service firebase.storage {
-  match /b/{bucket}/o {
-    // User uploads
-    match /tracks/{userId}/{allPaths=**} {
-      allow read: if true;  // Public access to tracks
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // User profiles
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
       allow write: if request.auth != null && request.auth.uid == userId;
+      
+      // Allow access to subcollections
+      match /likes/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
     }
     
-    // Album artwork
-    match /album_art/{allPaths=**} {
-      allow read: if true;
+    // Public playlists
+    match /playlists/{playlistId} {
+      allow read: if resource.data.isPublic == true || 
+                   (request.auth != null && resource.data.createdBy == request.auth.uid);
+      allow write: if request.auth != null && 
+                    (resource.data.createdBy == request.auth.uid || 
+                     !exists(/databases/$(database)/documents/playlists/$(playlistId)));
+    }
+    
+    // Tracks
+    match /tracks/{trackId} {
+      allow read: if true;  // All tracks can be read
       allow write: if request.auth != null && request.auth.token.admin == true;
     }
     
-    // Playlist covers
-    match /playlist-covers/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+    // Albums
+    match /albums/{albumId} {
+      allow read: if true;  // All albums can be read
+      allow write: if request.auth != null && request.auth.token.admin == true;
     }
     
-    // User profile images
-    match /profile-images/{userId}/{allPaths=**} {
+    // User likes
+    match /userLikes/{likeId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // User library
+    match /userLibrary/{entryId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // User history
+    match /userHistory/{entryId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+    }
+    
+    // Comments and reviews
+    match /comments/{commentId} {
       allow read: if true;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
     }
   }
 }

@@ -1,3 +1,5 @@
+// frontend/src/components/Sidebar.tsx
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -9,12 +11,14 @@ import {
   MagnifyingGlassIcon, 
   BookOpenIcon, 
   PlusCircleIcon, 
-  HeartIcon 
+  HeartIcon,
+  MusicalNoteIcon 
 } from '@heroicons/react/24/outline';
 
 interface Playlist {
   id: string;
   name: string;
+  isPublic?: boolean; // Make this optional
 }
 
 const Sidebar: React.FC = () => {
@@ -28,15 +32,27 @@ const Sidebar: React.FC = () => {
       if (!user) return;
 
       try {
+        // For development mode, use placeholder data
+        if (process.env.NODE_ENV === 'development') {
+          setPlaylists([
+            { id: '1', name: 'My Playlist #1' },
+            { id: '2', name: 'Coding Mix' },
+            { id: '3', name: 'Workout Beats' },
+          ]);
+          return;
+        }
+
+        // For production, fetch from Firebase
         const q = query(
           collection(db, 'playlists'),
-          where('userId', '==', user.uid)
+          where('createdBy', '==', user.uid)
         );
         
         const querySnapshot = await getDocs(q);
         const playlistsData = querySnapshot.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name,
+          isPublic: doc.data().isPublic
         }));
         
         setPlaylists(playlistsData);
@@ -86,6 +102,15 @@ const Sidebar: React.FC = () => {
           }`} />
           Your Library
         </Link>
+
+        <Link href="/sample-tracks" className={`flex items-center px-4 py-2 text-neutral-light hover:bg-primary-light rounded-md group ${
+          router.pathname === '/sample-tracks' ? 'bg-primary-light' : ''
+        }`}>
+          <MusicalNoteIcon className={`h-6 w-6 mr-4 ${
+            router.pathname === '/sample-tracks' ? 'text-secondary' : 'text-neutral group-hover:text-secondary'
+          }`} />
+          Sample Tracks
+        </Link>
         
         <div className="mt-8">
           <Link href="/create-playlist" className="flex items-center px-4 py-2 text-neutral-light hover:bg-primary-light rounded-md group">
@@ -127,11 +152,15 @@ const Sidebar: React.FC = () => {
       {user && (
         <div className="p-4 border-t border-neutral-dark">
           <Link href="/profile" className="flex items-center">
-            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-primary font-bold">
-              {user.displayName ? user.displayName.charAt(0) : user.email?.charAt(0)}
+            <div className="h-8 w-8 rounded-full bg-secondary flex items-center justify-center text-primary font-bold overflow-hidden">
+              {user.photoURL ? (
+                <img src={user.photoURL} alt="Profile" className="h-full w-full object-cover" />
+              ) : (
+                user.displayName ? user.displayName.charAt(0) : user.email?.charAt(0)
+              )}
             </div>
             <span className="ml-2 text-neutral-light">
-              {user.displayName || user.email}
+              {user.displayName || user.email?.split('@')[0]}
             </span>
           </Link>
         </div>

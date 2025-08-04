@@ -15,18 +15,42 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Password validation
     if (password !== confirmPassword) {
       return setError('Passwords do not match');
+    }
+    
+    if (password.length < 6) {
+      return setError('Password must be at least 6 characters');
     }
     
     try {
       setError('');
       setLoading(true);
+      
+      // Sign up the user
       await signUp(email, password);
+      
+      // If we're in development, show a success message
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Development signup successful for:', email);
+      }
+      
+      // Redirect to home page after successful signup
       router.push('/');
-    } catch (error) {
-      setError('Failed to create an account');
-      console.error(error);
+    } catch (error: any) {
+      // Handle different error types
+      console.error('Signup error:', error);
+      
+      if (error.code === 'auth/email-already-in-use') {
+        setError('Email already in use. Please use a different email or log in.');
+      } else if (error.code === 'auth/invalid-email') {
+        setError('Invalid email address.');
+      } else if (error.code === 'auth/network-request-failed') {
+        setError('Network error. Please check your connection or try again later.');
+      } else {
+        setError('Failed to create an account. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -76,6 +100,9 @@ export default function Signup() {
               className="w-full px-3 py-2 bg-primary border border-neutral-dark rounded focus:outline-none focus:border-secondary text-neutral-light"
               required
             />
+            <p className="text-neutral-dark text-xs mt-1">
+              Password must be at least 6 characters
+            </p>
           </div>
           
           <div className="mb-6">
@@ -109,6 +136,15 @@ export default function Signup() {
             </Link>
           </p>
         </div>
+
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-6 p-3 bg-primary rounded border border-neutral-dark">
+            <p className="text-neutral text-sm">
+              <strong>Development Mode:</strong> Authentication is simulated locally. 
+              No actual Firebase authentication is being used.
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -6,6 +6,8 @@ import { collection, getDocs, limit, query } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';
+import TrackList from '../components/TrackList';
+import { sampleTracks } from '../data/sampleTracks';
 
 interface Album {
   id: string;
@@ -27,6 +29,7 @@ export default function Home() {
   const [featuredPlaylists, setFeaturedPlaylists] = useState<Playlist[]>([]);
   const { user } = useAuth();
   const router = useRouter();
+  const [tracks, setTracks] = useState(sampleTracks);
   
   useEffect(() => {
     // Fetch data from Firebase
@@ -128,6 +131,11 @@ export default function Home() {
             <span className="ml-4 font-semibold">Discover Weekly</span>
           </button>
         </div>
+      </section>
+      {/* Track List Section */}
+      <section className="mb-8">
+        <h2 className="text-2xl font-bold text-neutral-light mb-4">Sample Tracks</h2>
+        <TrackList tracks={tracks} />
       </section>
       
       {/* Made For You Section */}
